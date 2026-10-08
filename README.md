@@ -1,7 +1,9 @@
 # Claude Usage (Android)
 
-Shows how close your Claude limits are and when they reset. The phone counterpart of
-the Windows tray app (`Y:\Projects\ClaudeUsageTray`), in its "Mono" look.
+Shows how close your Claude limits are and when they reset. An Android companion to a
+Windows tray app of the same name, in a monospace "Mono" look.
+
+Unofficial: not made by, endorsed by, or affiliated with Anthropic.
 
 - **Status bar:** the session percent drawn as the notification icon (`!!` at 100%).
 - **Shade card:** expand the notification for a bar per limit, reset times, refresh.
@@ -21,8 +23,8 @@ can change; the parser skips fields it doesn't recognise.
     ./gradlew :app:testDebugUnitTest :app:assembleDebug
     adb install -r -d app/build/outputs/apk/debug/app-debug.apk
 
-`local.properties` needs `sdk.dir`. Toolchain matches Nudge: AGP 9.0.1, Kotlin 2.3.20,
-compileSdk 36, minSdk 29.
+`local.properties` needs `sdk.dir`. Toolchain: AGP 9.0.1, Kotlin 2.3.20, compileSdk 36,
+minSdk 29.
 
 Debug builds have Settings › debug › simulate, which replaces the network reading with a
 chosen session percent so the icon, card, widget and alerts can be checked without
