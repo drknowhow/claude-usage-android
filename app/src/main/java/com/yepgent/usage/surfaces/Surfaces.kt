@@ -6,7 +6,9 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.graphics.drawable.Icon
+import android.os.Build
 import android.view.View
 import android.widget.RemoteViews
 import androidx.glance.appwidget.updateAll
@@ -31,11 +33,13 @@ object Surfaces {
     private const val AUTH_ID = 2
     private const val ALERT_SUMMARY_ID = 3
 
+    private class Row(val row: Int, val label: Int, val fill: Int, val empty: Int, val pct: Int)
+
     private val ROWS = listOf(
-        Triple(R.id.row0, R.id.label0, R.id.pct0) to R.id.bar0,
-        Triple(R.id.row1, R.id.label1, R.id.pct1) to R.id.bar1,
-        Triple(R.id.row2, R.id.label2, R.id.pct2) to R.id.bar2,
-        Triple(R.id.row3, R.id.label3, R.id.pct3) to R.id.bar3,
+        Row(R.id.row0, R.id.label0, R.id.fill0, R.id.empty0, R.id.pct0),
+        Row(R.id.row1, R.id.label1, R.id.fill1, R.id.empty1, R.id.pct1),
+        Row(R.id.row2, R.id.label2, R.id.fill2, R.id.empty2, R.id.pct2),
+        Row(R.id.row3, R.id.label3, R.id.fill3, R.id.empty3, R.id.pct3),
     )
 
     fun createChannels(context: Context) {
@@ -146,19 +150,22 @@ object Surfaces {
 
     private fun expanded(context: Context, snap: Snapshot): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.notification_expanded)
-        val palette = Palette.of(context)
-        ROWS.forEachIndexed { i, (ids, barId) ->
-            val (rowId, labelId, pctId) = ids
+        ROWS.forEachIndexed { i, ids ->
             val limit = snap.limits.getOrNull(i)
             if (limit == null) {
-                views.setViewVisibility(rowId, View.GONE)
+                views.setViewVisibility(ids.row, View.GONE)
                 return@forEachIndexed
             }
-            views.setViewVisibility(rowId, View.VISIBLE)
-            views.setTextViewText(labelId, limit.title.removeSuffix(" weekly"))
-            views.setTextViewText(pctId, "${limit.percent}%")
-            views.setTextColor(pctId, palette.levelColor(limit.percent))
-            views.setImageViewBitmap(barId, Bitmaps.segmentBar(limit.percent, 400, 20, palette.levelColor(limit.percent), palette.faint))
+            val p = limit.percent
+            views.setViewVisibility(ids.row, View.VISIBLE)
+            views.setTextViewText(ids.label, limit.title.removeSuffix(" weekly"))
+            views.setTextViewText(ids.pct, "$p%")
+            if (p >= Palette.HOT) tint(context, views, ids.pct, "setTextColor") { it.signal }
+            // White masks tinted per theme: the shade can switch day/night long after posting.
+            views.setImageViewBitmap(ids.fill, Bitmaps.segmentBar(p, 400, 20, Color.WHITE, Color.TRANSPARENT))
+            views.setImageViewBitmap(ids.empty, Bitmaps.segmentBar(p, 400, 20, Color.TRANSPARENT, Color.WHITE))
+            tint(context, views, ids.fill, "setColorFilter") { it.levelColor(p) }
+            tint(context, views, ids.empty, "setColorFilter") { it.faint }
         }
         val footer = listOfNotNull(
             snap.fetchedAt?.let { "updated ${Format.clock(it)}" },
@@ -166,6 +173,12 @@ object Surfaces {
         ).joinToString(" · ")
         views.setTextViewText(R.id.footer, footer)
         return views
+    }
+
+    /** Light and dark values resolved by the system at draw time on API 31+, else the current theme's. */
+    private fun tint(context: Context, views: RemoteViews, id: Int, method: String, pick: (Palette) -> Int) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) views.setColorInt(id, method, pick(Palette.LIGHT), pick(Palette.DARK))
+        else views.setInt(id, method, pick(Palette.of(context)))
     }
 
     private fun alertBuilder(context: Context): Notification.Builder =

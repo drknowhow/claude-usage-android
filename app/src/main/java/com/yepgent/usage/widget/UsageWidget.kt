@@ -10,9 +10,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
-import androidx.glance.Image
-import androidx.glance.ImageProvider
-import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
@@ -24,10 +21,11 @@ import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.color.ColorProvider
 import androidx.glance.layout.Alignment
+import androidx.glance.layout.Box
 import androidx.glance.layout.Column
-import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
+import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
@@ -44,9 +42,9 @@ import com.yepgent.usage.data.Limit
 import com.yepgent.usage.data.Snapshot
 import com.yepgent.usage.data.UsageRepository
 import com.yepgent.usage.data.headline
-import com.yepgent.usage.surfaces.Bitmaps
 import com.yepgent.usage.surfaces.Format
 import com.yepgent.usage.ui.MainActivity
+import kotlin.math.roundToInt
 
 class UsageWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = UsageWidget()
@@ -77,7 +75,6 @@ private fun mono(color: ColorProvider, size: Int, bold: Boolean = false) = TextS
 
 @Composable
 private fun Content(snap: Snapshot) {
-    val context = LocalContext.current
     val size = LocalSize.current
     val compact = size.width < 200.dp || size.height < 100.dp
     val h = snap.limits.headline()
@@ -112,7 +109,7 @@ private fun Content(snap: Snapshot) {
             Text(caption(main), style = mono(pair { it.ink2 }, 11), modifier = GlanceModifier.padding(bottom = 4.dp))
         }
         Spacer(GlanceModifier.height(6.dp))
-        Bar(context, main.percent, size.width - 32.dp, if (compact) 8.dp else 14.dp)
+        Bar(main.percent, if (compact) 8.dp else 14.dp)
         if (!compact && h.weekly != null && h.session != null) {
             Spacer(GlanceModifier.height(8.dp))
             Row(modifier = GlanceModifier.fillMaxWidth()) {
@@ -127,23 +124,27 @@ private fun Content(snap: Snapshot) {
     }
 }
 
+/**
+ * Twenty cells built from Glance boxes so their colours follow day/night like the text; a
+ * bitmap would be drawn once in whatever mode the app process happened to be in. Two rows
+ * of ten because a Glance Row holds at most ten children.
+ */
 @Composable
-private fun Bar(context: Context, percent: Int, width: Dp, height: Dp) {
-    val density = context.resources.displayMetrics.density
-    val palette = Palette.of(context)
-    val bitmap = Bitmaps.segmentBar(
-        percent,
-        (width.value * density).toInt(),
-        (height.value * density).toInt(),
-        palette.levelColor(percent),
-        palette.faint,
-    )
-    Image(
-        provider = ImageProvider(bitmap),
-        contentDescription = "$percent percent",
-        contentScale = ContentScale.FillBounds,
-        modifier = GlanceModifier.fillMaxWidth().height(height),
-    )
+private fun Bar(percent: Int, height: Dp) {
+    val filled = (percent.coerceIn(0, 100) / 100f * 20).roundToInt()
+    val fill = pair { it.levelColor(percent) }
+    val empty = pair { it.faint }
+    Row(GlanceModifier.fillMaxWidth().height(height)) {
+        for (half in 0..1) {
+            Row(GlanceModifier.defaultWeight().fillMaxHeight()) {
+                for (i in 0 until 10) {
+                    Box(GlanceModifier.defaultWeight().fillMaxHeight().padding(end = 3.dp)) {
+                        Box(GlanceModifier.fillMaxSize().background(if (half * 10 + i < filled) fill else empty)) {}
+                    }
+                }
+            }
+        }
+    }
 }
 
 private fun level(limit: Limit) = pair { it.levelColor(limit.percent) }
