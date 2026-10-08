@@ -9,6 +9,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.os.Build
+import android.os.Bundle
 import android.view.View
 import android.widget.RemoteViews
 import androidx.glance.appwidget.updateAll
@@ -32,6 +33,9 @@ object Surfaces {
     private const val LIVE_ID = 1
     private const val AUTH_ID = 2
     private const val ALERT_SUMMARY_ID = 3
+
+    /** Platform key behind NotificationCompat.setRequestPromotedOngoing; API 36 has no constant. */
+    private const val EXTRA_REQUEST_PROMOTED_ONGOING = "android.requestPromotedOngoing"
 
     private class Row(val row: Int, val label: Int, val fill: Int, val empty: Int, val pct: Int)
 
@@ -129,13 +133,24 @@ object Surfaces {
         val text = snap.limits.filter { it.group == Group.WEEKLY }
             .joinToString(" · ") { "${it.title.removeSuffix(" weekly")} ${it.percent}%" }
 
-        return Notification.Builder(context, CHANNEL_LIVE)
-            .setSmallIcon(Icon.createWithBitmap(Bitmaps.glyph(Format.glyph(shown.percent))))
+        val builder = Notification.Builder(context, CHANNEL_LIVE)
             .setContentTitle(title)
             .setContentText(text)
             .setSubText(if (snap.stale) "stale" else null)
-            .setStyle(Notification.DecoratedCustomViewStyle())
-            .setCustomBigContentView(expanded(context, snap))
+        if (canPromote(context)) {
+            // Android 16 Live Update: the status bar shows a chip with the short text. Some
+            // skins (OxygenOS) draw app icons there instead of small icons, so the glyph
+            // alone never reaches the status bar. Promotion forbids custom views.
+            builder.setSmallIcon(R.drawable.ic_stat_usage)
+                .setShortCriticalText(if (shown.percent >= 100) Format.glyph(shown.percent) else "${shown.percent}%")
+                .setStyle(progress(shown))
+                .addExtras(Bundle().apply { putBoolean(EXTRA_REQUEST_PROMOTED_ONGOING, true) })
+        } else {
+            builder.setSmallIcon(Icon.createWithBitmap(Bitmaps.glyph(Format.glyph(shown.percent))))
+                .setStyle(Notification.DecoratedCustomViewStyle())
+                .setCustomBigContentView(expanded(context, snap))
+        }
+        return builder
             .setColor(Palette.LIGHT.ink)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -146,6 +161,18 @@ object Surfaces {
             .addAction(Notification.Action.Builder(null as Icon?, "refresh", refreshNow(context)).build())
             .addAction(Notification.Action.Builder(null as Icon?, "open", openApp(context)).build())
             .build()
+    }
+
+    private fun canPromote(context: Context): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA &&
+            context.getSystemService(NotificationManager::class.java).canPostPromotedNotifications()
+
+    /** Twenty five-point segments, faded past the current percent. */
+    private fun progress(limit: Limit): Notification.ProgressStyle {
+        val color = if (limit.percent >= Palette.HOT) Palette.DARK.signal else Palette.LIGHT.leader
+        return Notification.ProgressStyle()
+            .setProgressSegments(List(20) { Notification.ProgressStyle.Segment(5).setColor(color) })
+            .setProgress(limit.percent.coerceIn(0, 100))
     }
 
     private fun expanded(context: Context, snap: Snapshot): RemoteViews {

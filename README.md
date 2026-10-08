@@ -30,9 +30,13 @@
 
 ### Status bar
 
-The session percent is the notification icon, so it sits next to the clock all day. At
-the limit it turns into `!!`. Settings can make it follow the weekly limit instead, or
-whichever of the two is higher.
+The session percent sits next to the clock all day. At the limit it turns into `!!`.
+Settings can make it follow the weekly limit instead, or whichever of the two is higher.
+
+On Android 16 phones that allow Live Updates (Pixel, stock Android) it shows as a chip
+with the percent. On older versions it is the notification icon. OxygenOS (OnePlus)
+replaces notification icons with app icons and doesn't let other apps post Live Updates,
+so there the status bar only shows the app icon; the shade card and widget still work.
 
 <img src="docs/images/statusbar.png" width="420" alt="Status bar showing 10:12 and 62">
 
@@ -40,7 +44,8 @@ whichever of the two is higher.
 
 Pull down the shade for one bar per limit (session, weekly, and any per-model weekly
 cap), the next reset, and a refresh button. The bars follow the shade's light or dark
-theme.
+theme. Where the Live Update chip is in use, Android draws the card itself: one bar for
+the limit in the status bar, the others as text.
 
 <img src="docs/images/shade.png" width="760" alt="The expanded notification in light and dark">
 
@@ -110,6 +115,10 @@ If the app saves you from a surprise rate limit, you can
 
 ## Notes for Android developers
 
+- On Android 16 the live notification asks for promotion (`android.requestPromotedOngoing`
+  plus `setShortCriticalText`) with a segmented `ProgressStyle`, which gives the status-bar
+  chip. Promotion forbids custom views, so the custom shade card is the fallback when
+  `canPostPromotedNotifications()` is false.
 - The live notification uses a default-importance channel with sound and vibration off.
   At low importance it lands in the shade's "Silent" group, and the status bar hides
   those icons.
