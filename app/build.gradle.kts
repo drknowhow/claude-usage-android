@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     // Kotlin comes from AGP 9 itself; do not add org.jetbrains.kotlin.android.
     alias(libs.plugins.android.application)
@@ -17,6 +19,11 @@ fun git(vararg args: String): String? = runCatching {
 val gitCommitCount = git("rev-list", "--count", "HEAD")?.toIntOrNull() ?: 1
 val gitShortSha = git("rev-parse", "--short=7", "HEAD") ?: "nogit"
 
+// Release signing lives outside the repo. Without this file the release build is unsigned.
+val releaseSigning = File(System.getProperty("user.home"), ".android/claude-usage-release.properties")
+    .takeIf { it.exists() }
+    ?.let { f -> Properties().apply { f.inputStream().use { load(it) } } }
+
 android {
     namespace = "com.yepgent.usage"
     compileSdk = 36
@@ -34,9 +41,21 @@ android {
         buildConfig = true
     }
 
+    signingConfigs {
+        if (releaseSigning != null) {
+            create("release") {
+                storeFile = file(releaseSigning.getProperty("storeFile"))
+                storePassword = releaseSigning.getProperty("storePassword")
+                keyAlias = releaseSigning.getProperty("keyAlias")
+                keyPassword = releaseSigning.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 
