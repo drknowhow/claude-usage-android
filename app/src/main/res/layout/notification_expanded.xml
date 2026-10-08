@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="4dp">
+
+    <LinearLayout android:id="@+id/row0" style="@style/NotifRow">
+        <TextView android:id="@+id/label0" style="@style/NotifLabel" />
+        <ImageView android:id="@+id/bar0" style="@style/NotifBar" android:contentDescription="@null" />
+        <TextView android:id="@+id/pct0" style="@style/NotifPct" />
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/row1" style="@style/NotifRow">
+        <TextView android:id="@+id/label1" style="@style/NotifLabel" />
+        <ImageView android:id="@+id/bar1" style="@style/NotifBar" android:contentDescription="@null" />
+        <TextView android:id="@+id/pct1" style="@style/NotifPct" />
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/row2" style="@style/NotifRow">
+        <TextView android:id="@+id/label2" style="@style/NotifLabel" />
+        <ImageView android:id="@+id/bar2" style="@style/NotifBar" android:contentDescription="@null" />
+        <TextView android:id="@+id/pct2" style="@style/NotifPct" />
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/row3" style="@style/NotifRow">
+        <TextView android:id="@+id/label3" style="@style/NotifLabel" />
+        <ImageView android:id="@+id/bar3" style="@style/NotifBar" android:contentDescription="@null" />
+        <TextView android:id="@+id/pct3" style="@style/NotifPct" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/footer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:fontFamily="monospace"
+        android:textAppearance="@android:style/TextAppearance.Material.Notification.Info" />
+</LinearLayout>
