@@ -1,0 +1,19 @@
+{
+  "name": "claude-usage-promo",
+  "private": true,
+  "description": "Remotion source for the README animation (docs/images/demo.gif).",
+  "scripts": {
+    "studio": "remotion studio",
+    "gif": "remotion render Demo ../docs/images/demo.gif --codec=gif --every-nth-frame=2 --scale=0.8"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.459",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.459"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "typescript": "5.9.3"
+  }
+}

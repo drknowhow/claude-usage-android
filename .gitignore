@@ -6,3 +6,5 @@ local.properties
 .idea/
 captures/
 *.apk
+node_modules/
+promo/out/
