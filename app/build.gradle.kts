@@ -7,7 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-val baseVersion = "0.1.0"
+val baseVersion = "0.1.1"
 
 fun git(vararg args: String): String? = runCatching {
     providers.exec { commandLine("git", *args) }

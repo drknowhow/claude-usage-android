@@ -45,7 +45,11 @@ class MainActivity : ComponentActivity() {
     private val login = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (it.resultCode == RESULT_OK) lifecycleScope.launch { UsageRepository.refresh(this@MainActivity, manual = true) }
     }
-    private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    // The first reading usually lands while this dialog is still open, and a notification
+    // posted without the permission is dropped, so post again once it is granted.
+    private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) republish()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,7 +72,14 @@ class MainActivity : ComponentActivity() {
         val fetchedAt = UsageRepository.state.value?.fetchedAt ?: 0
         if (System.currentTimeMillis() - fetchedAt > 60_000) {
             lifecycleScope.launch { UsageRepository.refresh(this@MainActivity, manual = true) }
+        } else {
+            republish()
         }
+    }
+
+    /** Re-posts the status notification and widget from the stored reading, without fetching. */
+    private fun republish() {
+        lifecycleScope.launch { Surfaces.publish(this@MainActivity, UsageRepository.load(this@MainActivity)) }
     }
 }
 
